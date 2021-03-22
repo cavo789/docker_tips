@@ -2,7 +2,7 @@
 <!-- Don't modify this file manually (you'll loose your changes) -->
 <!-- but run the tool once more -->
 
-<!-- Last refresh date: 2021-03-08 22:34:22 -->
+<!-- Last refresh date: 2021-03-22 10:24:08 -->
 
 <!-- below, content of ./index.md -->
 
@@ -19,6 +19,10 @@
   * [Minimal Dockerfile for PHP projects](#minimal-dockerfile-for-php-projects)
     * [Copy or using a volume?](#copy-or-using-a-volume)
 * [Tips](#tips)
+  * [Using Dockerfile or put it in a script?](#using-dockerfile-or-put-it-in-a-script)
+  * [NPM - Folder node_modules](#npm-folder-node_modules)
+  * [Add this folder in the PATH so npm can retrieve it from there](#add-this-folder-in-the-path-so-npm-can-retrieve-it-from-there)
+  * [RUN ln -s /opt/node_app/node_modules node_modules](#run-ln-s-optnode_appnode_modules-node_modules)
   * [Storing secrets](#storing-secrets)
 <!-- table-of-contents - end -->
 
@@ -64,6 +68,59 @@ The `COPY . .` statement order to make a copy of all files present in your host 
 <!-- below, content of ./tips/readme.md -->
 
 ## Tips
+
+<!-- below, content of ./tips/dockerfile_or_script/readme.md -->
+
+### Using Dockerfile or put it in a script?
+
+Sometimes, you can put actions directly in the Dockerfile (using the `RUN` command) or in a Bash script that you're still using as an entrypoint (f.i. `ENTRYPOINT [ "/bin/bash", "-c", "/home/node/.docker/app/entrypoint.sh" ]`).
+
+There is a big difference! The file `Dockerfile` is only used when building the image (i.e. `docker-compose build`). The file `docker-compose.yml` is used every time you start `docker-compose up`.
+
+Put in the `Dockerfile` any statements needed to build your image and make that image usable. Using the `RUN` command, the action will be put in a layer by Docker and if nothing change, the layer will be reused during the next built action. This will greatly increase the performance by reducing the time needed for the built.
+
+Let's consider the `composer install` (or `yarn install`) action: did you need to run it every time the image is used or, only, when the image is built?
+
+If you put it in the `Dockerfile` as a `RUN` command, while the `composer.json` file (or `package.json`) isn't modified, the layer is still valid so no need to run the command once more. That's the best choice.
+
+<!-- below, content of ./tips/npm_node_modules/readme.md -->
+
+### NPM - Folder node_modules
+
+NPM didn't force to put that folder in the project directory, you can put it somewhere else then just add the folder's location to the PATH.
+
+Consider this example:
+
+```Dockerfile
+WORKDIR /opt/node_app
+
+COPY package*.json ./
+
+RUN \
+    yarn install --production=false --no-optional; \
+    yarn cache clean --force; \
+
+### Add this folder in the PATH so npm can retrieve it from there
+ENV PATH="/opt/node_app/node_modules/.bin:$PATH"
+
+WORKDIR /home/node
+
+COPY --chown=node:node . .
+
+### RUN ln -s /opt/node_app/node_modules node_modules
+
+RUN yarn dev
+```
+
+We'll use the `/opt/node_app` folder and copy there the `package.json` (and `package-lock.json` if any) then run `yarn install` from there. Installing dependencies is put in a separate layer so while the `package.json` file isn't modified, the layer stay valid and shouldn't be executed again. **We'll have a better experience with less time needed for the built of the image.**
+
+We'll update the `PATH` variable and add our `/opt/node_app` folder.
+
+Then we'll switch to the `/home/node` folder where our application is installed, copy our project's files between the host and the container.
+
+Finally, we start yarn. Since the `node_modules` is not there, yarn / npm will search for the modules in the `PATH` and will retrieve our files.
+
+Note: if this doesn't work, just uncomment the `RUN ls` command.
 
 <!-- below, content of ./tips/store_secrets/readme.md -->
 
