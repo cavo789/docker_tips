@@ -39,4 +39,26 @@ agitated_darwin                                             healthy
 jovial_yalow                                                healthy
 ecstatic_almeida                                            healthy
 furious_heisenber                                           healthy
-´´´
+```
+
+Same result, another syntax:
+
+```bash
+clear
+
+printf "[1;33m%s[0m\n\n" "Docker containers - Health check"
+
+docker ps -a --format "{{.Names}}" | while read -r container ; do
+    healthcheckStatus=$(docker inspect --format='{{json .State.Health}}' $container | jq -r '.Status')
+
+    if [[ "$healthcheckStatus" == "healthy" ]]; then
+        healthcheckStatus="[1;32m${healthcheckStatus}[0m"
+    elif [[ "$healthcheckStatus" == "null" ]]; then
+        healthcheckStatus="[1;30m${healthcheckStatus}[0m"
+    else
+        healthcheckStatus="[1;31m${healthcheckStatus}[0m"
+    fi
+
+    printf "%-60s%s\n" "$container" "$healthcheckStatus"
+done
+```
