@@ -76,3 +76,12 @@ Run `sudo service xrdp restart` to restart the Remote Desktop Protocol Server an
 > ℹ️ **TIP**
 > When you don't need RDP anymore, free some resources by running `sudo service xrdp stop` in your Linux console.
 
+### Set your keyboard
+
+By default, the keyboard is set to `QWERTY` so go to `Applications` -> `Settings` -> `Keyboard`.
+
+![Set your keyboard](./images/settings_keyboard.png)
+
+In the third tab, retrieve your own keyboard setting. If you are using the keyboard `Français - Belgique` in Windows, you should set your keyboard to `Belgian (alt.)` in Ubuntu.
+
+![Set your keyboard to Belgian](./images/settings_keyboard_belgian.png)
